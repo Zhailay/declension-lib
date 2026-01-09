@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Тест склонения - Русский язык</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background-color: #fafafa;
+      color: #09090b;
+      line-height: 1.5;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    header {
+      margin-bottom: 32px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #09090b;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      color: #71717a;
+      font-size: 1rem;
+    }
+
+    .card {
+      background: white;
+      border: 1px solid #e4e4e7;
+      border-radius: 8px;
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    }
+
+    .input-group {
+      margin-bottom: 16px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: #09090b;
+    }
+
+    input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #e4e4e7;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-family: inherit;
+      background: white;
+      transition: all 0.2s;
+      outline: none;
+    }
+
+    input:hover {
+      border-color: #d4d4d8;
+    }
+
+    input:focus {
+      border-color: #09090b;
+      box-shadow: 0 0 0 3px rgba(9, 9, 11, 0.1);
+    }
+
+    button {
+      width: 100%;
+      background: #09090b;
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      font-family: inherit;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #18181b;
+    }
+
+    button:active {
+      background: #27272a;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+    }
+
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e4e4e7;
+      font-size: 0.875rem;
+    }
+
+    th {
+      background: #fafafa;
+      font-weight: 600;
+      color: #09090b;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    td:first-child {
+      color: #71717a;
+      font-weight: 500;
+    }
+
+    td:last-child {
+      font-weight: 600;
+      color: #09090b;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    tr:hover {
+      background: #fafafa;
+    }
+
+    .examples {
+      margin-top: 24px;
+    }
+
+    .examples h3 {
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 12px;
+      color: #09090b;
+    }
+
+    .example-words {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .example-word {
+      background: #fafafa;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      color: #09090b;
+      border: 1px solid #e4e4e7;
+      transition: all 0.2s;
+      font-weight: 500;
+    }
+
+    .example-word:hover {
+      background: #f4f4f5;
+      border-color: #d4d4d8;
+    }
+
+    .example-word:active {
+      background: #e4e4e7;
+    }
+
+    @media (max-width: 640px) {
+      body {
+        padding: 12px;
+      }
+
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      .card {
+        padding: 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Тест склонения слов</h1>
+      <p class="subtitle">Русский язык</p>
+    </header>
+
+    <div class="card">
+      <div class="input-group">
+        <label for="word-input">Введите слово для склонения:</label>
+        <input
+          type="text"
+          id="word-input"
+          placeholder="Например: стол, книга, окно"
+          value="документ"
+        >
+      </div>
+      <button onclick="declineWord()">Просклонять</button>
+
+      <div id="results"></div>
+
+      <div class="examples">
+        <h3>Попробуйте примеры:</h3>
+        <div class="example-words">
+          <span class="example-word" onclick="setWord('документ')">документ</span>
+          <span class="example-word" onclick="setWord('книга')">книга</span>
+          <span class="example-word" onclick="setWord('окно')">окно</span>
+          <span class="example-word" onclick="setWord('стол')">стол</span>
+          <span class="example-word" onclick="setWord('дверь')">дверь</span>
+          <span class="example-word" onclick="setWord('земля')">земля</span>
+          <span class="example-word" onclick="setWord('море')">море</span>
+          <span class="example-word" onclick="setWord('карандаш')">карандаш</span>
+          <span class="example-word" onclick="setWord('тетрадь')">тетрадь</span>
+          <span class="example-word" onclick="setWord('ручка')">ручка</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="declension.js"></script>
+  <script src="lang-ru.js"></script>
+
+  <script>
+    const cases = [
+      { code: 'nominative', name: 'Именительный (кто? что?)' },
+      { code: 'genitive', name: 'Родительный (кого? чего?)' },
+      { code: 'dative', name: 'Дательный (кому? чему?)' },
+      { code: 'accusative', name: 'Винительный (кого? что?)' },
+      { code: 'instrumental', name: 'Творительный (кем? чем?)' },
+      { code: 'prepositional', name: 'Предложный (о ком? о чём?)' }
+    ];
+
+    function declineWord() {
+      const word = document.getElementById('word-input').value.trim();
+
+      if (!word) {
+        alert('Пожалуйста, введите слово');
+        return;
+      }
+
+      let html = '<table>';
+      html += '<thead><tr><th>Падеж</th><th>Результат</th></tr></thead>';
+      html += '<tbody>';
+
+      cases.forEach(c => {
+        try {
+          const result = Declension.inflectWord(word, 'ru', c.code);
+          html += `<tr><td>${c.name}</td><td>${result}</td></tr>`;
+          console.log(`${c.name}: ${result}`);
+        } catch (error) {
+          html += `<tr><td>${c.name}</td><td style="color: #ef4444;">Ошибка: ${error.message}</td></tr>`;
+        }
+      });
+
+      html += '</tbody></table>';
+      document.getElementById('results').innerHTML = html;
+    }
+
+    function setWord(word) {
+      document.getElementById('word-input').value = word;
+      declineWord();
+    }
+
+    // Автоматическое склонение при загрузке
+    window.addEventListener('DOMContentLoaded', () => {
+      declineWord();
+    });
+
+    // Склонение по нажатию Enter
+    document.getElementById('word-input').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        declineWord();
+      }
+    });
+  </script>
+</body>
+</html>
