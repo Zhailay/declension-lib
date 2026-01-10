@@ -214,6 +214,16 @@
           value="документ"
         >
       </div>
+
+      <div class="input-group">
+        <label for="type-select">Тип:</label>
+        <select id="type-select" style="width: 100%; padding: 10px 12px; border: 1px solid #e4e4e7; border-radius: 6px; font-size: 0.875rem; font-family: inherit; background: white; transition: all 0.2s; outline: none;">
+          <option value="auto">Авто определение</option>
+          <option value="name">ФИО</option>
+          <option value="phrase">Словосочетание/Должность</option>
+        </select>
+      </div>
+
       <button onclick="declineWord()">Просклонять</button>
 
       <div id="results"></div>
@@ -223,21 +233,22 @@
         <div class="example-words">
           <span class="example-word" onclick="setWord('документ')">документ</span>
           <span class="example-word" onclick="setWord('книга')">книга</span>
-          <span class="example-word" onclick="setWord('окно')">окно</span>
           <span class="example-word" onclick="setWord('стол')">стол</span>
-          <span class="example-word" onclick="setWord('дверь')">дверь</span>
-          <span class="example-word" onclick="setWord('земля')">земля</span>
-          <span class="example-word" onclick="setWord('море')">море</span>
-          <span class="example-word" onclick="setWord('карандаш')">карандаш</span>
-          <span class="example-word" onclick="setWord('тетрадь')">тетрадь</span>
-          <span class="example-word" onclick="setWord('ручка')">ручка</span>
+          <span class="example-word" onclick="setWord('Иванов Иван Иванович')">Иванов И.И.</span>
+          <span class="example-word" onclick="setWord('Азатов Азат Азатұлы')">Азатов А.А.</span>
+          <span class="example-word" onclick="setWord('Начальник отдела цифровизации')">Начальник отдела</span>
+          <span class="example-word" onclick="setWord('Директор центра')">Директор</span>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="declension.js"></script>
-  <script src="lang-ru.js"></script>
+  <script>
+    // Загружаем библиотеку с параметром версии для обхода кеша
+    const script = document.createElement('script');
+    script.src = 'declension-all.js?v=' + Date.now();
+    document.head.appendChild(script);
+  </script>
 
   <script>
     const cases = [
@@ -251,6 +262,7 @@
 
     function declineWord() {
       const word = document.getElementById('word-input').value.trim();
+      const type = document.getElementById('type-select').value;
 
       if (!word) {
         alert('Пожалуйста, введите слово');
@@ -263,7 +275,8 @@
 
       cases.forEach(c => {
         try {
-          const result = Declension.inflectWord(word, 'ru', c.code);
+          const options = { type: type };
+          const result = Declension.inflectWord(word, 'ru', c.code, options);
           html += `<tr><td>${c.name}</td><td>${result}</td></tr>`;
           console.log(`${c.name}: ${result}`);
         } catch (error) {
@@ -288,6 +301,14 @@
     // Склонение по нажатию Enter
     document.getElementById('word-input').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
+        declineWord();
+      }
+    });
+
+    // Автообновление при изменении типа
+    document.getElementById('type-select').addEventListener('change', () => {
+      const word = document.getElementById('word-input').value.trim();
+      if (word) {
         declineWord();
       }
     });

@@ -214,6 +214,16 @@
           value="кітап"
         >
       </div>
+
+      <div class="input-group">
+        <label for="type-select">Түрі:</label>
+        <select id="type-select" style="width: 100%; padding: 10px 12px; border: 1px solid #e4e4e7; border-radius: 6px; font-size: 0.875rem; font-family: inherit; background: white; transition: all 0.2s; outline: none;">
+          <option value="auto">Авто анықтау</option>
+          <option value="name">Аты-жөні</option>
+          <option value="phrase">Тіркес/Лауазым</option>
+        </select>
+      </div>
+
       <button onclick="declineWord()">Септеу</button>
 
       <div id="results"></div>
@@ -224,20 +234,21 @@
           <span class="example-word" onclick="setWord('кітап')">кітап</span>
           <span class="example-word" onclick="setWord('үй')">үй</span>
           <span class="example-word" onclick="setWord('мектеп')">мектеп</span>
-          <span class="example-word" onclick="setWord('қала')">қала</span>
-          <span class="example-word" onclick="setWord('бала')">бала</span>
-          <span class="example-word" onclick="setWord('жер')">жер</span>
-          <span class="example-word" onclick="setWord('су')">су</span>
-          <span class="example-word" onclick="setWord('Арман')">Арман</span>
-          <span class="example-word" onclick="setWord('Андрей')">Андрей</span>
-          <span class="example-word" onclick="setWord('Әлия')">Әлия</span>
+          <span class="example-word" onclick="setWord('Арман Әміров')">Арман Әміров</span>
+          <span class="example-word" onclick="setWord('Әлия Сәтбаева')">Әлия Сәтбаева</span>
+          <span class="example-word" onclick="setWord('Цифровизация бөлімінің бастығы')">Бөлім бастығы</span>
+          <span class="example-word" onclick="setWord('Орталық директоры')">Директор</span>
         </div>
       </div>
     </div>
   </div>
 
-  <script src="declension.js"></script>
-  <script src="lang-kz.js"></script>
+  <script>
+    // Загружаем библиотеку с параметром версии для обхода кеша
+    const script = document.createElement('script');
+    script.src = 'declension-all.js?v=' + Date.now();
+    document.head.appendChild(script);
+  </script>
 
   <script>
     const cases = [
@@ -252,6 +263,7 @@
 
     function declineWord() {
       const word = document.getElementById('word-input').value.trim();
+      const type = document.getElementById('type-select').value;
 
       if (!word) {
         alert('Өтінеміз, сөз енгізіңіз');
@@ -264,7 +276,8 @@
 
       cases.forEach(c => {
         try {
-          const result = Declension.inflectWord(word, 'kz', c.code);
+          const options = { type: type };
+          const result = Declension.inflectWord(word, 'kz', c.code, options);
           html += `<tr><td>${c.name}</td><td>${result}</td></tr>`;
           console.log(`${c.name}: ${result}`);
         } catch (error) {
@@ -289,6 +302,14 @@
     // Склонение по нажатию Enter
     document.getElementById('word-input').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') {
+        declineWord();
+      }
+    });
+
+    // Автообновление при изменении типа
+    document.getElementById('type-select').addEventListener('change', () => {
+      const word = document.getElementById('word-input').value.trim();
+      if (word) {
         declineWord();
       }
     });
