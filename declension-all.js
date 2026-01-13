@@ -40,6 +40,7 @@
         text = sourceElement.textContent || sourceElement.innerText;
       }
 
+
       const inflectedText = this.inflectWord(text, lang, caseType);
 
       if (target) {
@@ -244,10 +245,14 @@
     }
   }
 
-  function inflectRu(word, caseType) {
+  function inflectRu(word, caseType, checkUndeclinable = false) {
     const lowerWord = word.toLowerCase();
 
     if (caseType === 'nominative') {
+      return word;
+    }
+
+    if (checkUndeclinable && isUndeclinableSurname(word)) {
       return word;
     }
 
@@ -258,12 +263,45 @@
         : result;
     }
 
-    // Special handling for surnames ending in -ов/-ев in instrumental case
-    if (caseType === 'instrumental') {
-      if (lowerWord.endsWith('ов') || lowerWord.endsWith('ев')) {
-        const ending = lowerWord.endsWith('ов') ? 'ым' : 'ем';
-        return word + ending;
+    if (lowerWord.endsWith('ова') || lowerWord.endsWith('ева') || lowerWord.endsWith('ина')) {
+      const stem = word.slice(0, -1);
+      const endings = {
+        genitive: 'ой',
+        dative: 'ой',
+        accusative: 'у',
+        instrumental: 'ой',
+        prepositional: 'ой'
+      };
+      return stem + (endings[caseType] || '');
+    }
+
+    if (lowerWord.endsWith('ов') || lowerWord.endsWith('ев') || lowerWord.endsWith('ин')) {
+      const stem = word.slice(0, -2);
+      const base = lowerWord.endsWith('ов') ? 'ов' : (lowerWord.endsWith('ев') ? 'ев' : 'ин');
+      const endings = {
+        genitive: 'а',
+        dative: 'у',
+        accusative: 'а',
+        instrumental: 'ым',
+        prepositional: 'е'
+      };
+      return stem + base + (endings[caseType] || '');
+    }
+
+    if (lowerWord.endsWith('ый') || lowerWord.endsWith('ий') || lowerWord.endsWith('ой')) {
+      const stem = word.slice(0, -2);
+      const isHardEnding = lowerWord.endsWith('ый') || lowerWord.endsWith('ой');
+      const endings = {
+        genitive: isHardEnding ? 'ого' : 'его',
+        dative: isHardEnding ? 'ому' : 'ему',
+        accusative: isHardEnding ? 'ый' : 'ий',
+        instrumental: isHardEnding ? 'ым' : 'им',
+        prepositional: isHardEnding ? 'ом' : 'ем'
+      };
+      if (lowerWord.endsWith('ой') && caseType === 'accusative') {
+        return stem + 'ой';
       }
+      return stem + endings[caseType];
     }
 
     const analysis = analyzeWord(word);
@@ -275,31 +313,69 @@
     return stem + ending;
   }
 
+  function isUndeclinableSurname(surname) {
+    const lowerSurname = surname.toLowerCase();
+
+    const undeclinablePatterns = [
+      /^(жайлау|хан|бек|би|тау|кул|кан|бай|жан|нур|ас|ер|кош|тас|жас|сай|су|кор|дос)$/i,
+      /^(ким|пак|ли|цой|хван|ян|чой|мун|со|ю|но|те|хо)$/i
+    ];
+
+    if (/[оуэюи]$/.test(lowerSurname)) {
+      return true;
+    }
+
+    if (/ко$/i.test(lowerSurname)) {
+      return true;
+    }
+
+    if (undeclinablePatterns.some(pattern => pattern.test(lowerSurname))) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function inflectCompoundSurname(surname, caseType) {
+    if (!surname.includes('-')) {
+      return inflectRu(surname, caseType, true);
+    }
+
+    const parts = surname.split('-');
+    return parts.map(part => {
+      return inflectRu(part, caseType, true);
+    }).join('-');
+  }
+
   function inflectFullNameRu(fullName, caseType, options = {}) {
     const parts = fullName.trim().split(/\s+/);
-    const type = options.type || 'auto'; // 'auto', 'name', 'phrase'
+    const type = options.type || 'auto';
+    const actualCase = caseType === 'accusative' && type === 'name' ? 'genitive' : caseType;
 
     if (type === 'phrase') {
-      // Для должностей и словосочетаний - склоняем только первое слово
-      return parts.map((part, index) => {
-        if (index === 0) {
-          return inflectRu(part, caseType);
-        }
-        return part;
+      return parts.map((part) => {
+        return inflectRu(part, caseType);
       }).join(' ');
     } else if (type === 'name') {
-      // Для ФИО - склоняем все части, кроме казахских отчеств
-      return parts.map(part => {
+      return parts.map((part) => {
         const lowerPart = part.toLowerCase();
+
         if (lowerPart.endsWith('ұлы') || lowerPart.endsWith('қызы') ||
             lowerPart.endsWith('улы') || lowerPart.endsWith('кызы')) {
           return part;
         }
-        return inflectRu(part, caseType);
+
+        if (part.includes('-')) {
+          return inflectCompoundSurname(part, actualCase);
+        }
+
+        if (isUndeclinableSurname(part)) {
+          return part;
+        }
+
+        return inflectRu(part, actualCase);
       }).join(' ');
     } else {
-      // auto - определяем автоматически
-      // Если все слова с большой буквы и от 2 до 4 слов - это ФИО
       const allCapitalized = parts.every(part => part[0] === part[0].toUpperCase());
       if (allCapitalized && parts.length >= 2 && parts.length <= 4) {
         return inflectFullNameRu(fullName, caseType, { type: 'name' });
@@ -311,7 +387,6 @@
 
   const RussianModule = {
     inflect: function(word, caseType, options = {}) {
-      // Если в слове есть пробелы, используем inflectFullNameRu
       if (word.includes(' ')) {
         return inflectFullNameRu(word, caseType, options);
       }
@@ -381,18 +456,13 @@
     const lowerWord = word.toLowerCase();
 
     if (hasVowelEnd) {
-      // Слова с притяжательными суффиксами -ы/-і меняются на -ның/-нің
       const lastChar = lowerWord[lowerWord.length - 1];
       if (lastChar === 'ы' || lastChar === 'і') {
-        // Убираем последнюю гласную и добавляем соответствующее окончание
-        // Гармонию определяем по основе слова (без последней гласной)
         const stem = word.slice(0, -1);
-        // Для притяжательных форм используем полные окончания: -ының/-інің
         return stem + chooseAffix(stem, 'інің', 'ының');
       }
       return word + chooseAffix(word, 'нің', 'ның');
     } else {
-      // Русские фамилии на -ов/-ев/-ова/-ева склоняются с глухим окончанием
       if (lowerWord.endsWith('ов') || lowerWord.endsWith('ев') ||
           lowerWord.endsWith('ова') || lowerWord.endsWith('ева')) {
         return word + chooseAffix(word, 'тің', 'тың');
@@ -413,16 +483,13 @@
     const lowerWord = word.toLowerCase();
 
     if (hasVowelEnd) {
-      // Слова с притяжательными суффиксами -ы/-і меняются на -на/-не
       const lastChar = lowerWord[lowerWord.length - 1];
       if (lastChar === 'ы' || lastChar === 'і') {
         const stem = word.slice(0, -1);
-        // Для притяжательных форм используем полные окончания: -ына/-іне
         return stem + chooseAffix(stem, 'іне', 'ына');
       }
       return word + chooseAffix(word, 'ге', 'ға');
     } else {
-      // Русские фамилии на -ов/-ев/-ова/-ева склоняются с глухим окончанием
       if (lowerWord.endsWith('ов') || lowerWord.endsWith('ев') ||
           lowerWord.endsWith('ова') || lowerWord.endsWith('ева')) {
         return word + chooseAffix(word, 'ке', 'қа');
@@ -443,16 +510,13 @@
     const lowerWord = word.toLowerCase();
 
     if (hasVowelEnd) {
-      // Слова с притяжательными суффиксами -ы/-і меняются на -н
       const lastChar = lowerWord[lowerWord.length - 1];
       if (lastChar === 'ы' || lastChar === 'і') {
         const stem = word.slice(0, -1);
-        // Для притяжательных форм используем полные окончания: -ын/-ін
         return stem + chooseAffix(stem, 'ін', 'ын');
       }
       return word + chooseAffix(word, 'ні', 'ны');
     } else {
-      // Русские фамилии на -ов/-ев/-ова/-ева склоняются с глухим окончанием
       if (lowerWord.endsWith('ов') || lowerWord.endsWith('ев') ||
           lowerWord.endsWith('ова') || lowerWord.endsWith('ева')) {
         return word + chooseAffix(word, 'ті', 'ты');
@@ -471,16 +535,13 @@
     const lowerWord = word.toLowerCase();
 
     if (hasVowelEnd) {
-      // Слова с притяжательными суффиксами -ы/-і меняются на -нда/-нде
       const lastChar = lowerWord[lowerWord.length - 1];
       if (lastChar === 'ы' || lastChar === 'і') {
         const stem = word.slice(0, -1);
-        // Для притяжательных форм используем полные окончания: -ында/-інде
         return stem + chooseAffix(stem, 'інде', 'ында');
       }
       return word + chooseAffix(word, 'де', 'да');
     } else {
-      // Русские фамилии на -ов/-ев/-ова/-ева склоняются с глухим окончанием
       if (lowerWord.endsWith('ов') || lowerWord.endsWith('ев') ||
           lowerWord.endsWith('ова') || lowerWord.endsWith('ева')) {
         return word + chooseAffix(word, 'те', 'та');
@@ -501,16 +562,13 @@
     const lowerWord = word.toLowerCase();
 
     if (hasVowelEnd) {
-      // Слова с притяжательными суффиксами -ы/-і меняются на -нан/-нен
       const lastChar = lowerWord[lowerWord.length - 1];
       if (lastChar === 'ы' || lastChar === 'і') {
         const stem = word.slice(0, -1);
-        // Для притяжательных форм используем полные окончания: -ынан/-інен
         return stem + chooseAffix(stem, 'інен', 'ынан');
       }
       return word + chooseAffix(word, 'ден', 'дан');
     } else {
-      // Русские фамилии на -ов/-ев/-ова/-ева склоняются с глухим окончанием
       if (lowerWord.endsWith('ов') || lowerWord.endsWith('ев') ||
           lowerWord.endsWith('ова') || lowerWord.endsWith('ева')) {
         return word + chooseAffix(word, 'тен', 'тан');
@@ -534,7 +592,6 @@
     if (hasVowelEnd) {
       return word + 'мен';
     } else {
-      // Русские фамилии на -ов/-ев/-ова/-ева склоняются с глухим окончанием
       if (lowerWord.endsWith('ов') || lowerWord.endsWith('ев') ||
           lowerWord.endsWith('ова') || lowerWord.endsWith('ева')) {
         return word + 'пен';
@@ -590,10 +647,9 @@
 
   function inflectFullNameKz(fullName, caseType, options = {}) {
     const parts = fullName.trim().split(/\s+/);
-    const type = options.type || 'auto'; // 'auto', 'name', 'phrase'
+    const type = options.type || 'auto';
 
     if (type === 'phrase') {
-      // Для должностей и словосочетаний - склоняем только последнее слово
       return parts.map((part, index) => {
         if (index === parts.length - 1) {
           return inflectKz(part, caseType);
@@ -601,8 +657,6 @@
         return part;
       }).join(' ');
     } else if (type === 'name') {
-      // Для ФИО в казахском языке - склоняем только последнее слово (фамилию)
-      // Имя и отчество остаются в именительном падеже
       return parts.map((part, index) => {
         if (index === parts.length - 1) {
           return inflectKz(part, caseType);
@@ -610,8 +664,6 @@
         return part;
       }).join(' ');
     } else {
-      // auto - определяем автоматически
-      // Если все слова с большой буквы и от 2 до 4 слов - это ФИО
       const allCapitalized = parts.every(part => part[0] === part[0].toUpperCase());
       if (allCapitalized && parts.length >= 2 && parts.length <= 4) {
         return inflectFullNameKz(fullName, caseType, { type: 'name' });
@@ -623,7 +675,6 @@
 
   const KazakhModule = {
     inflect: function(word, caseType, options = {}) {
-      // Если в слове есть пробелы, используем inflectFullNameKz
       if (word.includes(' ')) {
         return inflectFullNameKz(word, caseType, options);
       }
